@@ -1,0 +1,2 @@
+pyuic5 -o ./qt/ui_MainWindow.py ./qt/MainWindow.ui
+pyuic5 -o ./qt/ui_NewProject.py ./qt/NewProject.ui

@@ -196,7 +196,7 @@
             </property>
             <layout class="QGridLayout" name="gridLayout_4">
              <item row="1" column="0">
-              <widget class="QPushButton" name="pushButton_2">
+              <widget class="QPushButton" name="pushButton_split_clip">
                <property name="maximumSize">
                 <size>
                  <width>300</width>
@@ -217,7 +217,7 @@
               </widget>
              </item>
              <item row="2" column="0">
-              <widget class="QPushButton" name="pushButton">
+              <widget class="QPushButton" name="pushButton_next_clip">
                <property name="maximumSize">
                 <size>
                  <width>300</width>
@@ -288,7 +288,7 @@
               </spacer>
              </item>
              <item>
-              <widget class="QLabel" name="label_2">
+              <widget class="QLabel" name="label_start_frame">
                <property name="minimumSize">
                 <size>
                  <width>320</width>
@@ -612,7 +612,7 @@
               </spacer>
              </item>
              <item row="1" column="0">
-              <widget class="QLabel" name="label_3">
+              <widget class="QLabel" name="label_clip">
                <property name="minimumSize">
                 <size>
                  <width>900</width>
@@ -660,7 +660,7 @@
               </spacer>
              </item>
              <item>
-              <widget class="QLabel" name="label_4">
+              <widget class="QLabel" name="label_end_frame">
                <property name="minimumSize">
                 <size>
                  <width>320</width>
@@ -805,14 +805,14 @@
      <height>21</height>
     </rect>
    </property>
-   <widget class="QMenu" name="menuFile">
+   <widget class="QMenu" name="menuProject">
     <property name="title">
-     <string>File</string>
+     <string>Project</string>
     </property>
-    <addaction name="actionOpen"/>
-    <addaction name="separator"/>
+    <addaction name="actionNew"/>
+    <addaction name="actionLoad"/>
    </widget>
-   <addaction name="menuFile"/>
+   <addaction name="menuProject"/>
   </widget>
   <action name="actionOpen">
    <property name="text">
@@ -820,6 +820,16 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+O</string>
+   </property>
+  </action>
+  <action name="actionNew">
+   <property name="text">
+    <string>New</string>
+   </property>
+  </action>
+  <action name="actionLoad">
+   <property name="text">
+    <string>Load</string>
    </property>
   </action>
  </widget>
