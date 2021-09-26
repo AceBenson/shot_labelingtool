@@ -1,15 +1,22 @@
+import sys
 import os
+import glob
+import cv2
+import json
+import numpy as np
 
 from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
 from qt.ui_NewProject import Ui_NewProject
 
+import utils
+
 class Project(QWidget, Ui_NewProject):
-    def __init__(self, newProject):
+    def __init__(self, initProject):
         super().__init__()
         self.setupUi(self)
         self.cwd = os.getcwd()
 
-        self.newProject = newProject
+        self.initProject = initProject
 
         self.pushButton_img_dir.clicked.connect(self.getPath_imgDir)
         self.pushButton_shot_detection_result.clicked.connect(self.getPath_shotDetectionResult)
@@ -49,4 +56,39 @@ class Project(QWidget, Ui_NewProject):
 
         self.newProject(self.img_dir_path.text(), self.shot_detection_result_path.text(), self.output_dir_path.text())
         self.close()
-        
+    
+    def newProject(self, img_dir_path, shot_detection_result_path, output_dir_path):
+        self.imgDirPath = img_dir_path
+        self.shotDetectionResultPath = shot_detection_result_path
+        self.outputDirPath = output_dir_path
+
+        for clazz in ["CloseUp", "Pitch", "Hit", "Overlook", "Other"]:
+            utils.creatFolder(os.path.join(self.outputDirPath, clazz))
+
+        self.saveProject()
+        self.initProject()
+
+    def loadProject(self):
+        filePath, filetype  = QFileDialog.getOpenFileName(self, "Select the Project File", os.getcwd(),
+                    "Json Files (*.json);;All Files (*)")
+        if(filePath == ""):
+            return
+            
+        with open(filePath) as jsonfile:
+            data = json.load(jsonfile)
+            self.imgDirPath = data["imgDirPath"]
+            self.shotDetectionResultPath = data["shotDetectionResultPath"]
+            self.outputDirPath = data["outputDirPath"]
+        self.initProject()
+
+    def saveProject(self):
+        with open(os.path.join(self.outputDirPath, "config.json"), 'w') as jsonfile:
+            data = {
+                'imgDirPath': self.imgDirPath,
+                'shotDetectionResultPath': self.shotDetectionResultPath,
+                'outputDirPath': self.outputDirPath,
+            }
+            json.dump(data, jsonfile, indent=4)
+
+    def saveClip(self, startIdx, endIdx, clazz):
+        os.path.join(self.outputDirPath, clazz)

@@ -1,2 +1,16 @@
 pyuic5 -o ./qt/ui_MainWindow.py ./qt/MainWindow.ui
 pyuic5 -o ./qt/ui_NewProject.py ./qt/NewProject.ui
+
+
+After creating MainWindow.ui, add following lines to use custom slider
+
+Add: 
+
+from qt.customSlider._generic_range_slider import _GenericRangeSlider
+
+Modify: 
+
+self.horizontalSlider = _GenericRangeSlider[int](self.main_frame)
+self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
+self.horizontalSlider.setTickPosition(_GenericRangeSlider[int].TicksBelow)
+self.horizontalSlider.setObjectName("horizontalSlider")
