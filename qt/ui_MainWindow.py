@@ -318,15 +318,15 @@ class Ui_MainWindow(object):
         self.horizontalLayout_2.addWidget(self.frame_6)
         self.gridLayout.addWidget(self.center_frame, 1, 0, 1, 1)
         
-        # self.horizontalSlider = _GenericRangeSlider[int](self.main_frame)
-        # self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
-        # self.horizontalSlider.setTickPosition(_GenericRangeSlider[int].TicksBelow)
-        # self.horizontalSlider.setObjectName("horizontalSlider")
-
-        self.horizontalSlider = QtWidgets.QSlider(self.main_frame)
+        self.horizontalSlider = _GenericRangeSlider[int](self.main_frame)
         self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
-        self.horizontalSlider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        self.horizontalSlider.setTickPosition(_GenericRangeSlider[int].TicksBelow)
         self.horizontalSlider.setObjectName("horizontalSlider")
+
+        # self.horizontalSlider = QtWidgets.QSlider(self.main_frame)
+        # self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
+        # self.horizontalSlider.setTickPosition(QtWidgets.QSlider.TicksBelow)
+        # self.horizontalSlider.setObjectName("horizontalSlider")
 
         self.gridLayout.addWidget(self.horizontalSlider, 2, 0, 1, 1)
         self.line_3 = QtWidgets.QFrame(self.main_frame)

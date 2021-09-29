@@ -5,6 +5,7 @@ import cv2
 import json
 import numpy as np
 
+from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QIntValidator
 from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog, QSlider
 from qt.ui_MainWindow import Ui_MainWindow
@@ -39,13 +40,27 @@ class Main(QMainWindow, Ui_MainWindow):
         self.pushButton_start_frame_prev.clicked.connect(lambda : self.prevFrame(Target.START_FRAME))
         self.pushButton_clip_prev.clicked.connect(lambda : self.prevFrame(Target.CLIP))
         self.pushButton_end_frame_prev.clicked.connect(lambda : self.prevFrame(Target.END_FRAME))
+        
+        self.pushButton_clip_play.clicked.connect(self.handlePlayPause)
+        self.playerTimer = QTimer()
+        self.playerTimer.timeout.connect(self.playerTimerEvent)
+        self.fps = 30.0
+
+        self.pushButton_clip_1x.setFlat(True)
+        self.pushButton_clip_2x.setFlat(False)
+        self.pushButton_clip_4x.setFlat(False)
+        self.pushButton_clip_8x.setFlat(False)
+        self.pushButton_clip_1x.clicked.connect(self.onChangeFPS)
+        self.pushButton_clip_2x.clicked.connect(self.onChangeFPS)
+        self.pushButton_clip_4x.clicked.connect(self.onChangeFPS)
+        self.pushButton_clip_8x.clicked.connect(self.onChangeFPS)
 
         self.lineEdit_start_frame.editingFinished.connect(lambda : self.moveToFrame(Target.START_FRAME, int(self.lineEdit_start_frame.text())))
         self.lineEdit_clip.editingFinished.connect(lambda : self.moveToFrame(Target.CLIP, int(self.lineEdit_clip.text())))
         self.lineEdit_end_frame.editingFinished.connect(lambda : self.moveToFrame(Target.END_FRAME, int(self.lineEdit_end_frame.text())))
 
-        # self.horizontalSlider.valueChanged.connect(self.onChangeSliderValue)
-        self.horizontalSlider.valueChanged.connect(lambda : self.moveToFrame(Target.CLIP, self.horizontalSlider.value()))
+        self.horizontalSlider.valueChanged.connect(lambda : self.onChangeSliderValue())
+        # self.horizontalSlider.valueChanged.connect(lambda : self.moveToFrame(Target.CLIP, self.horizontalSlider.value()))
 
         self.radioButton_CloseUp.toggled.connect(lambda : self.onChangeClazz())
         self.radioButton_Pitch.toggled.connect(lambda : self.onChangeClazz())
@@ -70,22 +85,30 @@ class Main(QMainWindow, Ui_MainWindow):
         for target in Target:
             self.lineEdits[target].setValidator(QIntValidator(0, len(self.imageArray)-1))
         
-        
+
+        # self.initFrames()
 
         self.horizontalSlider.setMinimum(0)
         self.horizontalSlider.setMaximum(len(self.imageArray)-1)
         self.horizontalSlider.setSingleStep(1)
-        # self.horizontalSlider.setValue([self.scenePairs[0][0], self.scenePairs[0][0], self.scenePairs[0][1]])
-        self.horizontalSlider.setValue(self.scenePairs[0][0])
+        # self.horizontalSlider.setValue([self.scenePairs[0][0], int((self.scenePairs[0][0] + self.scenePairs[0][1])/2), self.scenePairs[0][1]])
+        self.horizontalSlider.setBarMovesAllHandles(False)
+        self.horizontalSlider.setBarIsRigid(False)
+        # self.horizontalSlider.setValue(self.scenePairs[0][0])
 
         self.initFrames()
+
+        self.keyPressEvent = self.keyPressEvent
 
         self.curRadioButton = None
 
     def initFrames(self):
-        self.frameIdxs = [self.scenePairs[0][0], self.scenePairs[0][0], self.scenePairs[0][1]]
+        self.frameIdxs = [self.scenePairs[0][0], int((self.scenePairs[0][0] + self.scenePairs[0][1])/2), self.scenePairs[0][1]]
         for target in Target:
-            self.moveToFrame(target, self.frameIdxs[target])
+            self.frames[target] = cv2.imdecode(np.fromfile(os.path.join(self.project.imgDirPath, self.imageArray[self.frameIdxs[target]]), dtype = np.uint8), -1)
+            utils.showImgAtLabel(self.labels[target], self.frames[target])
+            self.lineEdits[target].setText(str(self.frameIdxs[target]))
+        self.horizontalSlider.setValue(self.frameIdxs)
 
     def nextFrame(self, target):
         self.moveToFrame(target, self.frameIdxs[target]+1)
@@ -94,6 +117,9 @@ class Main(QMainWindow, Ui_MainWindow):
         self.moveToFrame(target, self.frameIdxs[target]-1)
 
     def moveToFrame(self, target, targetFrameIdx):
+        if (self.frameIdxs[target] == targetFrameIdx):
+            return
+
         print("moveToFrame", target, targetFrameIdx)
         if targetFrameIdx < 0 or targetFrameIdx >= len(self.imageArray):
             print("=== Frame: " + str(targetFrameIdx) + " is out of range !!! ===")
@@ -101,26 +127,73 @@ class Main(QMainWindow, Ui_MainWindow):
         self.frameIdxs[target] = targetFrameIdx
         self.frames[target] = cv2.imdecode(np.fromfile(os.path.join(self.project.imgDirPath, self.imageArray[self.frameIdxs[target]]), dtype = np.uint8), -1)
         utils.showImgAtLabel(self.labels[target], self.frames[target])
-
         self.lineEdits[target].setText(str(targetFrameIdx))
 
-        if target == Target.CLIP:
-            self.horizontalSlider.setValue(targetFrameIdx) # This setValue will call the connected function(moveToFrame)
+        # if target == Target.CLIP:
+        #     self.horizontalSlider.setValue(targetFrameIdx) # This setValue will call the connected function(moveToFrame)
+        self.horizontalSlider.setValue(self.frameIdxs)
+
+    def handlePlayPause(self):
+        if not self.playerTimer.isActive():
+            self.pushButton_clip_play.setText("Pause")
+            self.playerTimer.start(1000/self.fps)
+        else:
+            self.pushButton_clip_play.setText("Play")
+            self.playerTimer.stop()
+
+    def playerTimerEvent(self):
+        if self.frameIdxs[Target.CLIP]+1 >= len(self.imageArray): # or use > self.frameIdxs[Target.END_FRAME] instead
+            self.playerTimer.stop()
+        else:
+            self.moveToFrame(Target.CLIP, self.frameIdxs[Target.CLIP]+1)
+
 
     def onChangeClazz(self):
         if self.sender().isChecked():
             self.curRadioButton = self.sender()
+
+    def onChangeSliderValue(self):
+        for target in Target:
+            self.moveToFrame(target, self.horizontalSlider.value()[target])
+            
+    def onChangeFPS(self):
+        def clearAllDefault():
+            self.pushButton_clip_1x.setFlat(False)
+            self.pushButton_clip_2x.setFlat(False)
+            self.pushButton_clip_4x.setFlat(False)
+            self.pushButton_clip_8x.setFlat(False)
+
+        self.fps = 30.0*int(self.sender().text()[0])
+
+        if self.playerTimer.isActive():
+            self.playerTimer.stop()
+            self.playerTimer.start(1000/self.fps)
+
+        clearAllDefault()
+        self.sender().setFlat(True)
+
+    def keyPressEvent(self, e):
+        if e.key() == Qt.Key_Plus:
+            startPoint = int((self.horizontalSlider.minimum() + self.frameIdxs[Target.START_FRAME]) / 2)
+            endPoint = int((self.horizontalSlider.maximum() + self.frameIdxs[Target.END_FRAME]) / 2)
+            # startPoint = 1000
+            # endPoint = 7000
+            print("%d / %d" % (startPoint, endPoint))
+            self.horizontalSlider.setRange(startPoint, endPoint)
+        elif e.key() == Qt.Key_Minus:
+            startPoint = int((self.horizontalSlider.minimum() + 0) / 2)
+            endPoint = int((self.horizontalSlider.maximum() + len(self.imageArray)-1) / 2)
+            # startPoint = 0
+            # endPoint = len(self.imageArray) - 1
+            print("%d / %d" % (startPoint, endPoint))
+            self.horizontalSlider.setRange(startPoint, endPoint)
+
 
     def resetRadioButton(self):
         self.curRadioButton.setAutoExclusive(False)
         self.curRadioButton.setChecked(False)
         self.curRadioButton.setAutoExclusive(True)
         self.curRadioButton = None
-
-    def onChangeSliderValue(self):
-        # print(type(self.horizontalSlider.value()[0]))
-        print(type(self.horizontalSlider.value()))
-        print(self.horizontalSlider.value())
 
     def nextClip(self):
         if self.curRadioButton == None:
@@ -137,7 +210,6 @@ class Main(QMainWindow, Ui_MainWindow):
 
         self.resetRadioButton()
         self.initFrames()
-
 
     def splitClip(self):
         if self.curRadioButton == None:

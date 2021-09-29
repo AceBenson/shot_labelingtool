@@ -91,4 +91,6 @@ class Project(QWidget, Ui_NewProject):
             json.dump(data, jsonfile, indent=4)
 
     def saveClip(self, startIdx, endIdx, clazz):
-        os.path.join(self.outputDirPath, clazz)
+        with open(os.path.join(self.outputDirPath, "result.scene.txt"), 'a') as txtfile:
+            txtfile.write("%d %d %s\n" % (startIdx, endIdx, clazz))
+
