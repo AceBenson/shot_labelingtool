@@ -20,6 +20,18 @@ class Target(IntEnum):
     CLIP = 1
     END_FRAME = 2
 
+    def next(self):
+        cls = self.__class__
+        members = list(cls)
+        index = members.index(self)+1
+        return members[index] if index != len(members) else None
+    
+    def prev(self):
+        cls = self.__class__
+        members = list(cls)
+        index = members.index(self)-1
+        return members[index] if index != -1 else None
+
 class Main(QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
@@ -117,8 +129,16 @@ class Main(QMainWindow, Ui_MainWindow):
         self.moveToFrame(target, self.frameIdxs[target]-1)
 
     def moveToFrame(self, target, targetFrameIdx):
-        if (self.frameIdxs[target] == targetFrameIdx):
+        if self.frameIdxs[target] == targetFrameIdx:
             return
+
+        if target.next() and targetFrameIdx >= self.frameIdxs[target.next()]:
+            return
+        elif target.prev() and targetFrameIdx <= self.frameIdxs[target.prev()]:
+            return
+
+        self.horizontalSlider.setRange( min(self.horizontalSlider.minimum(), targetFrameIdx), \
+            max(self.horizontalSlider.maximum(), targetFrameIdx))
 
         print("moveToFrame", target, targetFrameIdx)
         if targetFrameIdx < 0 or targetFrameIdx >= len(self.imageArray):
@@ -176,16 +196,12 @@ class Main(QMainWindow, Ui_MainWindow):
         if e.key() == Qt.Key_Plus:
             startPoint = int((self.horizontalSlider.minimum() + self.frameIdxs[Target.START_FRAME]) / 2)
             endPoint = int((self.horizontalSlider.maximum() + self.frameIdxs[Target.END_FRAME]) / 2)
-            # startPoint = 1000
-            # endPoint = 7000
-            print("%d / %d" % (startPoint, endPoint))
+            print("Change Slider Range: %d / %d" % (startPoint, endPoint))
             self.horizontalSlider.setRange(startPoint, endPoint)
         elif e.key() == Qt.Key_Minus:
             startPoint = int((self.horizontalSlider.minimum() + 0) / 2)
-            endPoint = int((self.horizontalSlider.maximum() + len(self.imageArray)-1) / 2)
-            # startPoint = 0
-            # endPoint = len(self.imageArray) - 1
-            print("%d / %d" % (startPoint, endPoint))
+            endPoint = int((self.horizontalSlider.maximum() + len(self.imageArray) - 1) / 2)
+            print("Change Slider Range: %d / %d" % (startPoint, endPoint))
             self.horizontalSlider.setRange(startPoint, endPoint)
 
 
@@ -198,6 +214,10 @@ class Main(QMainWindow, Ui_MainWindow):
     def nextClip(self):
         if self.curRadioButton == None:
             print("Warning: Please choose one class for labeling.")
+            return
+        
+        if self.frameIdxs[Target.START_FRAME] >= self.frameIdxs[Target.END_FRAME]:
+            print("Warning: Start Frame can't be greater than End Frame.")
             return
 
         # Update self.scenePairs and scene.txt
@@ -216,9 +236,15 @@ class Main(QMainWindow, Ui_MainWindow):
             print("Warning: Please choose one class for labeling.")
             return
 
+        if self.frameIdxs[Target.START_FRAME] >= self.frameIdxs[Target.END_FRAME]:
+            print("Warning: Start Frame can't be greater than End Frame.")
+            return
+
         # Update self.scenePairs and scene.txt
         oldPair = self.scenePairs.pop(0)
-        self.scenePairs.insert(0, (self.frameIdxs[Target.END_FRAME]+1, oldPair[1]))
+
+        if not self.frameIdxs[Target.END_FRAME]+1 > oldPair[1]:
+            self.scenePairs.insert(0, (self.frameIdxs[Target.END_FRAME]+1, oldPair[1]))
         with open(self.project.shotDetectionResultPath, 'w') as txtFile:
             txtFile.writelines(["%s %s\n" % (str(pair[0]), str(pair[1])) for pair in self.scenePairs])
 
