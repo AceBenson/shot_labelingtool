@@ -82,7 +82,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
         
     def initProject(self):
-        data_list = [os.path.basename(filename) for filename in glob.glob(os.path.join(self.project.imgDirPath, '*.jpg'))]
+        data_list = [os.path.basename(filename) for filename in glob.glob(os.path.join(self.project.imgDirPath, '*.png'))]
         self.imageArray = [img for img in sorted(data_list)] # Why not self.imageArray = sorted(data_list) ?
         
         with open(self.project.shotDetectionResultPath, 'r') as txtFile:
@@ -116,6 +116,7 @@ class Main(QMainWindow, Ui_MainWindow):
 
     def initFrames(self):
         self.frameIdxs = [self.scenePairs[0][0], int((self.scenePairs[0][0] + self.scenePairs[0][1])/2), self.scenePairs[0][1]]
+        self.zoomInSlider()
         for target in Target:
             self.frames[target] = cv2.imdecode(np.fromfile(os.path.join(self.project.imgDirPath, self.imageArray[self.frameIdxs[target]]), dtype = np.uint8), -1)
             utils.showImgAtLabel(self.labels[target], self.frames[target])
@@ -132,9 +133,9 @@ class Main(QMainWindow, Ui_MainWindow):
         if self.frameIdxs[target] == targetFrameIdx:
             return
 
-        if target.next() and targetFrameIdx >= self.frameIdxs[target.next()]:
+        if target.next() is not None and targetFrameIdx >= self.frameIdxs[target.next()]:
             return
-        elif target.prev() and targetFrameIdx <= self.frameIdxs[target.prev()]:
+        elif target.prev() is not None and targetFrameIdx <= self.frameIdxs[target.prev()]:
             return
 
         self.horizontalSlider.setRange( min(self.horizontalSlider.minimum(), targetFrameIdx), \
@@ -192,17 +193,24 @@ class Main(QMainWindow, Ui_MainWindow):
         clearAllDefault()
         self.sender().setFlat(True)
 
+    def zoomInSlider(self):
+        clipRange = self.frameIdxs[Target.END_FRAME] - self.frameIdxs[Target.START_FRAME]
+        startPoint = max(0, self.frameIdxs[Target.START_FRAME] - int(clipRange/3))
+        endPoint = min((len(self.imageArray) - 1), self.frameIdxs[Target.END_FRAME] + int(clipRange/3))
+        print("Change Slider Range: %d / %d" % (startPoint, endPoint))
+        self.horizontalSlider.setRange(startPoint, endPoint)
+
+    def zoomOutSlider(self):
+        startPoint = 0
+        endPoint = len(self.imageArray) - 1
+        print("Change Slider Range: %d / %d" % (startPoint, endPoint))
+        self.horizontalSlider.setRange(startPoint, endPoint)
+
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Plus:
-            startPoint = int((self.horizontalSlider.minimum() + self.frameIdxs[Target.START_FRAME]) / 2)
-            endPoint = int((self.horizontalSlider.maximum() + self.frameIdxs[Target.END_FRAME]) / 2)
-            print("Change Slider Range: %d / %d" % (startPoint, endPoint))
-            self.horizontalSlider.setRange(startPoint, endPoint)
+            self.zoomInSlider()
         elif e.key() == Qt.Key_Minus:
-            startPoint = int((self.horizontalSlider.minimum() + 0) / 2)
-            endPoint = int((self.horizontalSlider.maximum() + len(self.imageArray) - 1) / 2)
-            print("Change Slider Range: %d / %d" % (startPoint, endPoint))
-            self.horizontalSlider.setRange(startPoint, endPoint)
+            self.zoomOutSlider()
 
 
     def resetRadioButton(self):

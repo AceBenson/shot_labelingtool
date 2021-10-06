@@ -139,7 +139,7 @@ class _GenericSlider(QSlider, Generic[_T]):
         if oldMin != self._minimum or oldMax != self._maximum:
             self.sliderChange(self.SliderRangeChange)
             self.rangeChanged.emit(self._minimum, self._maximum)
-            self.setValue(self._value)  # re-bound
+            # self.setValue(self._value)  # re-bound
 
     def tickInterval(self) -> int:  # type: ignore
         return self._tickInterval
